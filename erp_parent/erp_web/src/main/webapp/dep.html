@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<link rel="stylesheet" type="text/css" href="ui/themes/default/easyui.css">
+<link rel="stylesheet" type="text/css" href="ui/themes/icon.css">
+<script type="text/javascript" src="ui/jquery.min.js"></script>
+<script type="text/javascript" src="ui/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="ui/locale/easyui-lang-zh_CN.js"></script>
+<script type="text/javascript" src="js/jquery.serializejson.js"></script>
+
+</head>
+<body>	
+<div id="editWindow" class="easyui-window" style="width: 300px;height: 200px" title="编辑框" data-options="closed:true">
+   <form id="editForm">
+       <input name="t.uuid" type="hidden">
+	   <table>
+	   	<tr>
+	   		<td>部门名称:</td>
+	   		<td><input name="t.name"></td>
+	   	</tr>
+	   	<tr>
+	   		<td>部门电话:</td>
+	   		<td><input name="t.tele"></td>
+	   	</tr>
+	   </table>
+   </form>
+   <button id="saveBtn" type="button">保存</button>
+</div>
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>
+				部门名称:<input type="text" name="t1.name">
+				部门电话:<input type="text" name="t1.tele">
+				<button id="searchBtn" type="button">查询</button>
+				</td>
+			</tr>
+		</table>
+	</form>
+	<table id="grid"></table>
+</body>
+<script type="text/javascript">
+var method="";
+	$(function(){	
+		$('#grid').datagrid({
+			url:'dep_getListByPage.action',
+			columns:[[
+			          {field:'uuid',title:'部门编号',width:100},
+			          {field:'name',title:'部门名称',width:100},
+			          {field:'tele',title:'部门电话',width:100},
+			          {field:'-',title:'操作',width:100,formatter: function(value,row,index){
+						return '<a href="#" onclick="edit('+row.uuid+')">修改</a> <a href="#" onclick="del('+row.uuid+')">删除</a>' 	  
+						
+			          }}
+			          
+			          ]],
+			singleSelect:true,
+			pagination:true,
+			toolbar: [{
+				iconCls: 'icon-edit',
+				text:'增加',
+				handler: function(){
+					method = "add";
+				    $('#editWindow').window('open');  //打开编辑窗口
+				}
+			}]
+
+		})
+	})
+	//绑定查询按钮
+	$('#searchBtn').bind('click',function(){
+		//获取表单数据
+		var formdata = $('#searchForm').serializeJSON();
+		//alert(JSON.stringify(formdata)); //JSON.stringify查看json对象
+		$('#grid').datagrid('load',formdata);  //调用grid的load方法进行一次查询
+	})
+	
+	$('#testBtn').bind('click',function(){
+	   var griddata  =	$('#grid').datagrid('getData');
+	   alert(JSON.stringify(griddata));
+	})
+	
+	//绑定保存按钮
+	$('#saveBtn').bind('click',function(){
+		 var formdata = $('#editForm').serializeJSON(); // 获取表单数据
+		// alert(JSON.stringify(formdata));
+		 //dep_add.action
+		 $.ajax({
+			 url:'dep_'+method+'.action',
+			 dataType:'json',
+			 type:'post',
+			 data:formdata,
+			 success:function(value){
+				 $.messager.alert('提示',value.message);  //弹出一个easyui的提示框
+				 if(value.success){
+					 $('#grid').datagrid('reload');  //刷新表单
+					 $('#editWindow').window('close');  //关闭编辑窗口
+					 $('#editForm').form('clear');   //清除表单数据   
+				 }
+			 }
+		 })
+	})
+
+	//修改的Ajax
+	function edit(uuid){
+		method="update";
+		$('#editWindow').window('open');//触发点击事件的时候打开表单
+		
+		$('#editForm').form('load','dep_get.action?id='+uuid);	// 读取表单的URL
+
+	}
+	
+	//删除的Ajax
+	function del(uuid){
+		$.messager.confirm('确认','您确认想要删除记录吗？',function(r){    
+		    if (r){    
+		        $.ajax({
+		        	url:'dep_delete.action?id='+uuid,
+        			dataType:'json',
+        			type:'get',
+        			success:function(value){
+        				$.messager.alert('提示',value.message);    
+						if(value.success){
+							$('#grid').datagrid('reload');  //刷新表单
+						}
+        			}
+		        })  
+		    }    
+		});
+	}
+</script>
+</html>
